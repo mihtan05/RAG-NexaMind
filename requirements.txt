@@ -1,0 +1,18 @@
+# Core Libraries
+markitdown[all]>=0.0.1a4
+sentence-transformers>=3.0.0
+numpy>=1.26.0
+
+# LLM Generation (Google Gemini Modern SDK)
+google-genai>=2.3.0
+
+# FastAPI Backend & Utilities
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9
+sse-starlette>=2.1.0
+python-dotenv>=1.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9
+PyJWT>=2.8.0
+flashrank>=0.2.10

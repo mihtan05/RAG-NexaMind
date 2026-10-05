@@ -1,0 +1,66 @@
+# ==========================================
+# NexaMind AI - Production .gitignore
+# ==========================================
+
+# 1. Environment Variables & Secrets (CRITICAL: NEVER COMMIT)
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# 2. Python Virtual Environments & Distribution
+.venv/
+venv/
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+*.egg
+
+# 3. Python Bytecode Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 4. Frontend Dependencies & Build Output
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.env
+frontend/.env.local
+
+# 5. Persistent Local Database & AI Models
+data/nexamind.db
+data/nexamind.db-journal
+data/nexamind.db-wal
+data/nexamind.db-shm
+data/rerank_models/
+
+# User Uploads & Vector Cache (Keep folder structure via .gitkeep)
+data/uploads/*
+!data/uploads/.gitkeep
+data/cache_index/*
+!data/cache_index/.gitkeep
+
+# Ignore large personal test docs in data/
+data/*.docx
+
+# 6. Logs & Temp Files
+*.log
+scratch/
+temp/
+tmp/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 7. IDE & OS Metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
