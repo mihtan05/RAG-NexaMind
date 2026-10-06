@@ -3,9 +3,15 @@
  * Kết nối với FastAPI Backend (REST & SSE Streaming) kèm JWT Auth & Multi-tenancy
  */
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+const apiUrl = (endpoint) => `${API_BASE_URL}${endpoint}`;
+
 function getAuthHeaders(extra = {}) {
   const token = localStorage.getItem('nexamind_jwt');
-  const headers = { ...extra };
+  const headers = { 
+    'ngrok-skip-browser-warning': 'true',
+    ...extra 
+  };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -27,9 +33,12 @@ const jsonOrThrow = async (res, msg) => {
 };
 
 export async function loginUser(payload) {
-  const res = await fetch('/api/auth/login', {
+  const res = await fetch(apiUrl('/api/auth/login'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
+    },
     body: JSON.stringify(payload),
   });
   const data = await jsonOrThrow(res, 'Đăng nhập không thành công');
@@ -40,21 +49,23 @@ export async function loginUser(payload) {
 }
 
 export async function getStats(ownerId = null) {
-  const url = ownerId ? `/api/stats?owner_id=${encodeURIComponent(ownerId)}` : '/api/stats';
+  const url = apiUrl(ownerId ? `/api/stats?owner_id=${encodeURIComponent(ownerId)}` : '/api/stats');
   const res = await fetch(url, { headers: getAuthHeaders() });
   return jsonOrThrow(res, 'Lỗi tải thống kê');
 }
 
 export async function getDocuments(ownerId = null) {
-  const url = ownerId ? `/api/documents?owner_id=${encodeURIComponent(ownerId)}` : '/api/documents';
+  const url = apiUrl(ownerId ? `/api/documents?owner_id=${encodeURIComponent(ownerId)}` : '/api/documents');
   const res = await fetch(url, { headers: getAuthHeaders() });
   return jsonOrThrow(res, 'Lỗi tải danh sách tài liệu');
 }
 
 export async function previewDocument(filename, ownerId = null) {
-  const url = ownerId
-    ? `/api/documents/${encodeURIComponent(filename)}/preview?owner_id=${encodeURIComponent(ownerId)}`
-    : `/api/documents/${encodeURIComponent(filename)}/preview`;
+  const url = apiUrl(
+    ownerId
+      ? `/api/documents/${encodeURIComponent(filename)}/preview?owner_id=${encodeURIComponent(ownerId)}`
+      : `/api/documents/${encodeURIComponent(filename)}/preview`
+  );
   const res = await fetch(url, { headers: getAuthHeaders() });
   return jsonOrThrow(res, 'Lỗi nạp xem trước tài liệu');
 }
@@ -67,7 +78,7 @@ export async function uploadFiles(files, ownerId = null) {
   if (ownerId) {
     formData.append('owner_id', ownerId);
   }
-  const res = await fetch('/api/documents/upload', {
+  const res = await fetch(apiUrl('/api/documents/upload'), {
     method: 'POST',
     headers: getAuthHeaders(),
     body: formData,
@@ -76,7 +87,7 @@ export async function uploadFiles(files, ownerId = null) {
 }
 
 export async function indexDocuments(filenames = null, ownerId = null) {
-  const res = await fetch('/api/documents/index', {
+  const res = await fetch(apiUrl('/api/documents/index'), {
     method: 'POST',
     headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
@@ -88,9 +99,11 @@ export async function indexDocuments(filenames = null, ownerId = null) {
 }
 
 export async function deleteDocument(filename, ownerId = null) {
-  const url = ownerId
-    ? `/api/documents/${encodeURIComponent(filename)}?owner_id=${encodeURIComponent(ownerId)}`
-    : `/api/documents/${encodeURIComponent(filename)}`;
+  const url = apiUrl(
+    ownerId
+      ? `/api/documents/${encodeURIComponent(filename)}?owner_id=${encodeURIComponent(ownerId)}`
+      : `/api/documents/${encodeURIComponent(filename)}`
+  );
   const res = await fetch(url, {
     method: 'DELETE',
     headers: getAuthHeaders(),
@@ -99,9 +112,11 @@ export async function deleteDocument(filename, ownerId = null) {
 }
 
 export async function clearAllDocuments(ownerId = null) {
-  const url = ownerId
-    ? `/api/documents?owner_id=${encodeURIComponent(ownerId)}`
-    : `/api/documents`;
+  const url = apiUrl(
+    ownerId
+      ? `/api/documents?owner_id=${encodeURIComponent(ownerId)}`
+      : `/api/documents`
+  );
   const res = await fetch(url, {
     method: 'DELETE',
     headers: getAuthHeaders(),
@@ -110,14 +125,14 @@ export async function clearAllDocuments(ownerId = null) {
 }
 
 export async function getConversations(userId) {
-  const res = await fetch(`/api/conversations?user_id=${encodeURIComponent(userId)}`, {
+  const res = await fetch(apiUrl(`/api/conversations?user_id=${encodeURIComponent(userId)}`), {
     headers: getAuthHeaders(),
   });
   return jsonOrThrow(res, 'Lỗi tải lịch sử chat');
 }
 
 export async function createConversation(userId, title = 'Đoạn chat mới') {
-  const res = await fetch('/api/conversations', {
+  const res = await fetch(apiUrl('/api/conversations'), {
     method: 'POST',
     headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ user_id: userId, title }),
@@ -126,14 +141,14 @@ export async function createConversation(userId, title = 'Đoạn chat mới') {
 }
 
 export async function getConversation(userId, convId) {
-  const res = await fetch(`/api/conversations/${convId}?user_id=${encodeURIComponent(userId)}`, {
+  const res = await fetch(apiUrl(`/api/conversations/${convId}?user_id=${encodeURIComponent(userId)}`), {
     headers: getAuthHeaders(),
   });
   return jsonOrThrow(res, 'Lỗi tải đoạn chat');
 }
 
 export async function updateConversation(userId, convId, patch) {
-  const res = await fetch(`/api/conversations/${convId}?user_id=${encodeURIComponent(userId)}`, {
+  const res = await fetch(apiUrl(`/api/conversations/${convId}?user_id=${encodeURIComponent(userId)}`), {
     method: 'PATCH',
     headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(patch),
@@ -142,7 +157,7 @@ export async function updateConversation(userId, convId, patch) {
 }
 
 export async function deleteConversation(userId, convId) {
-  const res = await fetch(`/api/conversations/${convId}?user_id=${encodeURIComponent(userId)}`, {
+  const res = await fetch(apiUrl(`/api/conversations/${convId}?user_id=${encodeURIComponent(userId)}`), {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -154,7 +169,7 @@ export async function deleteConversation(userId, convId) {
  */
 export async function streamChat(payload, { onSources, onToken, onDone, onError, signal }) {
   try {
-    const response = await fetch('/api/chat/stream', {
+    const response = await fetch(apiUrl('/api/chat/stream'), {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(payload),
