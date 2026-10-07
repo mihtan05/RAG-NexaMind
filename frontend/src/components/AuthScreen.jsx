@@ -457,14 +457,6 @@ export default function AuthScreen({ onLoginSuccess }) {
                 Hủy chờ & mở lại nút
               </button>
             )}
-
-            <button
-              type="button"
-              className="google-config-hint"
-              onClick={() => setShowConfigModal(true)}
-            >
-              ⚙️ Cấu hình Backend & Google Client ID
-            </button>
           </div>
 
           {/* Đường kẻ ngang HOẶC */}
