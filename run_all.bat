@@ -55,11 +55,11 @@ start "NexaMind Frontend (Port 5173)" cmd /k "cd /d %~dp0frontend && npm run dev
 echo.
 echo ========================================================
 echo   He thong da duoc khoi dong:
-echo   - Web App UI:   http://127.0.0.1:5173
-echo   - API Swagger:  http://127.0.0.1:8000/docs
+echo   - Web App UI:   http://localhost:5173
+echo   - API Swagger:  http://localhost:8000/docs
 echo ========================================================
 echo.
 
 :: 7. Tu dong mo trinh duyet sau 3 giay
 ping 127.0.0.1 -n 4 >nul
-start http://127.0.0.1:5173
+start http://localhost:5173
