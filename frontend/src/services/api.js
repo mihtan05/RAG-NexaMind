@@ -3,8 +3,23 @@
  * Kết nối với FastAPI Backend (REST & SSE Streaming) kèm JWT Auth & Multi-tenancy
  */
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
-const apiUrl = (endpoint) => `${API_BASE_URL}${endpoint}`;
+export function getApiBaseUrl() {
+  const custom = localStorage.getItem('nexamind_api_url');
+  if (custom && custom.trim()) {
+    return custom.trim().replace(/\/$/, '');
+  }
+  return (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+}
+
+export function setApiBaseUrl(url) {
+  if (url && url.trim()) {
+    localStorage.setItem('nexamind_api_url', url.trim().replace(/\/$/, ''));
+  } else {
+    localStorage.removeItem('nexamind_api_url');
+  }
+}
+
+const apiUrl = (endpoint) => `${getApiBaseUrl()}${endpoint}`;
 
 function getAuthHeaders(extra = {}) {
   const token = localStorage.getItem('nexamind_jwt');

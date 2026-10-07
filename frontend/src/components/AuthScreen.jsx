@@ -10,7 +10,7 @@ import {
   KeyRound
 } from 'lucide-react';
 import './AuthScreen.css';
-import { loginUser } from '../services/api';
+import { loginUser, getApiBaseUrl, setApiBaseUrl } from '../services/api';
 
 // Google OAuth 2.0 Web Client ID do bạn cung cấp
 const DEFAULT_GOOGLE_CLIENT_ID = '79295214545-c23cegeft4f8pjucj2i34r60v9hc855g.apps.googleusercontent.com';
@@ -53,6 +53,8 @@ export default function AuthScreen({ onLoginSuccess }) {
   });
 
   const [tempClientId, setTempClientId] = useState(googleClientId);
+  const [backendUrl, setBackendUrl] = useState(() => getApiBaseUrl());
+  const [isGoogleReady, setIsGoogleReady] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const googleBtnContainerRef = useRef(null);
 
@@ -99,7 +101,13 @@ export default function AuthScreen({ onLoginSuccess }) {
             shape: 'pill',
             logo_alignment: 'left',
           });
+          setIsGoogleReady(true);
         }
+
+        // Tự động mở Google One-Tap nếu trình duyệt cho phép
+        try {
+          window.google.accounts.id.prompt();
+        } catch (_) {}
       }
     } catch (err) {
       console.warn('Lỗi cấu hình Google Sign-In:', err);
@@ -251,8 +259,8 @@ export default function AuthScreen({ onLoginSuccess }) {
     }
   };
 
-  // Lưu Google Client ID từ modal nếu cần thay đổi
-  const handleSaveClientId = (e) => {
+  // Lưu cấu hình Backend & Google Client ID từ modal
+  const handleSaveConfig = (e) => {
     e.preventDefault();
     if (!tempClientId.trim()) {
       setErrorMsg('Vui lòng nhập Google Client ID.');
@@ -261,8 +269,13 @@ export default function AuthScreen({ onLoginSuccess }) {
     const cleanId = tempClientId.trim();
     setGoogleClientId(cleanId);
     localStorage.setItem('nexamind_google_client_id', cleanId);
+
+    if (backendUrl) {
+      setApiBaseUrl(backendUrl.trim());
+    }
+
     setShowConfigModal(false);
-    setSuccessMsg('Đã cập nhật Google Client ID mới!');
+    setSuccessMsg('Đã lưu cấu hình kết nối mới!');
     setTimeout(() => {
       initGoogleServices(cleanId);
     }, 300);
@@ -395,21 +408,31 @@ export default function AuthScreen({ onLoginSuccess }) {
 
           {/* NÚT ĐĂNG NHẬP BẰNG GOOGLE (TÀI KHOẢN THẬT) */}
           <div className="google-signin-wrapper">
-            <button
-              type="button"
-              className="btn-google-signin"
-              onClick={handleGoogleSignInClick}
-              disabled={isLoading}
-              title="Đăng nhập bằng tài khoản Google thật của bạn"
-            >
-              <svg width="18" height="18" viewBox="0 0 48 48">
-                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-              </svg>
-              <span>{isLoading ? 'Đang kết nối Google...' : 'Continue with Google'}</span>
-            </button>
+            {/* 1. Nút chính thức của Google GIS (An toàn, không bao giờ bị chặn popup, có One-Tap) */}
+            <div 
+              ref={googleBtnContainerRef} 
+              className="google-btn-official" 
+              style={{ display: isGoogleReady ? 'flex' : 'none' }} 
+            />
+
+            {/* 2. Nút fallback khi thư viện Google đang tải */}
+            {!isGoogleReady && (
+              <button
+                type="button"
+                className="btn-google-signin"
+                onClick={handleGoogleSignInClick}
+                disabled={isLoading}
+                title="Đăng nhập bằng tài khoản Google thật của bạn"
+              >
+                <svg width="18" height="18" viewBox="0 0 48 48">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                  <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                </svg>
+                <span>{isLoading ? 'Đang kết nối Google...' : 'Continue with Google'}</span>
+              </button>
+            )}
 
             {isLoading && (
               <button
@@ -435,8 +458,13 @@ export default function AuthScreen({ onLoginSuccess }) {
               </button>
             )}
 
-            {/* Container dự phòng cho nút chính thức của Google GIS */}
-            <div ref={googleBtnContainerRef} className="google-btn-official" style={{ display: 'none' }} />
+            <button
+              type="button"
+              className="google-config-hint"
+              onClick={() => setShowConfigModal(true)}
+            >
+              ⚙️ Cấu hình Backend & Google Client ID
+            </button>
           </div>
 
           {/* Đường kẻ ngang HOẶC */}
@@ -538,14 +566,14 @@ export default function AuthScreen({ onLoginSuccess }) {
         </div>
       </div>
 
-      {/* MODAL CẤU HÌNH GOOGLE OAUTH CLIENT ID NẾU CẦN ĐỔI */}
+      {/* MODAL CẤU HÌNH BACKEND & GOOGLE OAUTH CLIENT ID */}
       {showConfigModal && (
         <div className="auth-modal-backdrop" onClick={() => setShowConfigModal(false)}>
           <div className="auth-modal-box" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <h3 className="auth-modal-title">
                 <KeyRound size={20} color="#00838f" />
-                Cấu hình Google OAuth Client ID
+                Cấu hình Kết nối Backend & Google ID
               </h3>
               <button
                 type="button"
@@ -557,44 +585,59 @@ export default function AuthScreen({ onLoginSuccess }) {
             </div>
 
             <p className="auth-modal-desc">
-              Hệ thống hiện đang sử dụng Client ID của bạn. Đảm bảo bạn đã thêm <b>{window.location.origin}</b> vào mục <b>Authorized JavaScript origins</b> trên Google Cloud Console.
+              Bạn có thể trỏ nhanh URL Backend (ngrok) và Google Client ID ngay tại đây mà không cần deploy lại Vercel.
             </p>
 
-            <div className="auth-guide-steps">
-              <ol>
-                <li>
-                  Vào{' '}
-                  <a
-                    href="https://console.cloud.google.com/apis/credentials"
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: '#00838f', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '3px' }}
-                  >
-                    Google Cloud Console <ExternalLink size={12} />
-                  </a>
-                </li>
-                <li>Chọn OAuth Client ID của bạn (loại Web Application).</li>
-                <li>
-                  Tại <b>Authorized JavaScript origins</b>, kiểm tra đã có:
-                  <br />
-                  <code>{window.location.origin}</code> và <code>http://localhost:5173</code>
-                </li>
-              </ol>
-            </div>
-
-            <form onSubmit={handleSaveClientId}>
+            <form onSubmit={handleSaveConfig}>
               <div className="auth-field-group">
-                <label className="auth-label">Client ID hiện tại</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label className="auth-label">Địa chỉ Backend API (ngrok URL)</label>
+                  <button
+                    type="button"
+                    onClick={() => setBackendUrl('https://copper-onto-unhappy.ngrok-free.dev')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#00838f',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    Dùng ngrok hiện tại
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  className="auth-input"
+                  placeholder="https://copper-onto-unhappy.ngrok-free.dev"
+                  value={backendUrl}
+                  onChange={(e) => setBackendUrl(e.target.value)}
+                />
+              </div>
+
+              <div className="auth-field-group" style={{ marginTop: '12px' }}>
+                <label className="auth-label">Google OAuth Client ID</label>
                 <input
                   type="text"
                   className="auth-input"
                   value={tempClientId}
                   onChange={(e) => setTempClientId(e.target.value)}
-                  autoFocus
                 />
               </div>
 
-              <div className="auth-modal-actions">
+              <div className="auth-guide-steps" style={{ marginTop: '12px', fontSize: '0.8rem' }}>
+                <ol style={{ paddingLeft: '18px', margin: '4px 0', color: '#64748b' }}>
+                  <li>
+                    Origin web hiện tại: <code>{window.location.origin}</code>
+                  </li>
+                  <li>
+                    Đảm bảo đã thêm origin trên vào <b>Authorized JavaScript origins</b> trên Google Cloud Console.
+                  </li>
+                </ol>
+              </div>
+
+              <div className="auth-modal-actions" style={{ marginTop: '16px' }}>
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -616,7 +659,7 @@ export default function AuthScreen({ onLoginSuccess }) {
                   className="btn-auth-submit"
                   style={{ width: 'auto', padding: '9px 20px', borderRadius: '8px' }}
                 >
-                  Cập nhật
+                  Lưu & Áp dụng
                 </button>
               </div>
             </form>
